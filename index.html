@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GUNA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loader i {
+            font-size: 3em;
+            color: #333;
+            animation: spin 1s infinite linear;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .header {
+            background-color: #c0c0c0;
+            padding: 10px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+        }
+
+        .search-box {
+            position: relative;
+            left: 310px;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 290px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            color: gray;
+            cursor: pointer;
+        }
+
+        h1 {
+            font-family: cursive;
+        }
+
+        .product-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-gap: 20px;
+        }
+
+        .product-list-item {
+            padding: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .product-title {
+            margin-top: 10px;
+            font-weight: normal;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+        }
+
+        .product-price {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .product-discount {
+            background-color: red;
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .cart-count {
+            background-color: #c0c0c0;
+            color: white;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+
+        .dropdown {
+            margin-right: 20px;
+        }
+
+        .dropdown select {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loader" id="loader">
+        <i class="fa-solid fa-spinner"></i>
+    </div>
+
+    <header class="header">
+        <div class="search-box">
+            <input id="search-input" class="search-input" type="text" placeholder="Search...">
+            <i id="search-icon" class="fas fa-search search-icon"></i>
+        </div>
+        <div class="dropdown">
+            <label for="sort-by">Sort by:</label>
+            <select id="sort-by" onchange="sortProducts()">
+                <option value="price_asc">Price (Low to High)</option>
+                <option value="price_desc">Price (High to Low)</option>
+                <option value="discount_asc">Discount (Low to High)</option>
+                <option value="discount_desc">Discount (High to Low)</option>
+                <option value="name_asc">Name (A to Z)</option>
+                <option value="name_desc">Name (Z to A)</option>
+            </select>
+        </div>
+        <div class="dropdown">
+            <label for="productsPerPage">Products per page:</label>
+            <select id="productsPerPage" onchange="changeProductsPerPage()">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+                <!-- Add more options as needed -->
+            </select>
+        </div>
+        <div class="add-to-cart" onclick="goToCart()">
+            <i class="fas fa-shopping-bag"></i>
+            <span id="cart-count" class="cart-count">0</span>
+        </div>
+    </header>
+
+    <h1></h1>
+    <div class="product-list" id="product-list"></div>
+    <div>
+        <button id="prev-page-btn">Previous Page</button>
+        <span id="current-page">Page 1</span>
+        <button id="next-page-btn">Next Page</button>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function showLoader() {
+            document.getElementById('loader').style.display = 'flex';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        let productsData = [];
+        let currentPage = 1;
+        let perPage = 5; 
+
+        function fetchProducts() {
+            showLoader();
+            fetch(`https://fakestoreapi.com/products?page=${currentPage}`)
+                .then(response => {
+                    hideLoader();
+                    return response.json();
+                })
+                .then(products => {
+                    productsData = products;
+                    displayProducts(products.slice(0, perPage)); 
+                    updateCurrentPage();
+                    updatePagination();
+                })
+                .catch(error => {
+                    hideLoader();
+                    console.log('Error:', error);
+                });
+        }
+        fetchProducts();
+
+        // Function to display products
+        function displayProducts(products) {
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+
+            products.forEach(product => {
+                const listItem = document.createElement('div');
+                listItem.classList.add('product-list-item');
+
+                const image = document.createElement('img');
+                image.classList.add('product-image');
+                image.src = product.image;
+                image.alt = product.title;
+                listItem.appendChild(image);
+
+                const title = document.createElement('h3');
+                title.classList.add('product-title');
+                title.textContent = product.title;
+                listItem.appendChild(title);
+
+                const price = document.createElement('div');
+                price.classList.add('product-price');
+                price.textContent = `$${product.price}`;
+                listItem.appendChild(price);
+
+                const discount = document.createElement('div');
+                discount.classList.add('product-discount');
+                discount.textContent = `${getRandomDiscount()}% off`;
+                listItem.appendChild(discount);
+
+                // Calculate discounted price
+                const discountedPrice = product.price * (1 - getRandomDiscount() / 100);
+                const finalPrice = document.createElement('div');
+                finalPrice.classList.add('product-final-price');
+                finalPrice.textContent = `$${discountedPrice.toFixed(2)}`;
+                listItem.appendChild(finalPrice);
+
+                // Add a click event listener to navigate to the product details page
+                listItem.addEventListener('click', () => {
+                    // Redirect to the product details page with the product ID as a query parameter
+                    window.location.href = `product.html?id=${product.id}`;
+                });
+
+                productList.appendChild(listItem);
+            });
+        }
+
+        // Function to update pagination controls
+        function updatePagination() {
+            const totalPages = Math.ceil(productsData.length / perPage);
+            document.getElementById('current-page').textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById('prev-page-btn').disabled = currentPage === 1;
+            document.getElementById('next-page-btn').disabled = currentPage === totalPages;
+        }
+
+        function getRandomDiscount() {
+            return Math.floor(Math.random() * 20) + 1;
+        }
+
+        // Function to redirect to the cart page
+        function goToCart() {
+            window.location.href = "cart.html";
+        }
+
+        function searchProducts() {
+            const searchInput = document.getElementById('search-input').value.toLowerCase();
+            const filteredProducts = productsData.filter(product => {
+                return product.title.toLowerCase().includes(searchInput);
+            });
+            displayProducts(filteredProducts);
+        }
+
+        // Add event listener to search icon
+        document.getElementById('search-icon').addEventListener('click', searchProducts);
+
+        function sortProducts() {
+            const sortBy = document.getElementById('sort-by').value;
+
+            let sortedProducts = [...productsData];
+
+            switch (sortBy) {
+                case 'price_asc':
+                    sortedProducts.sort((a, b) => a.price - b.price);
+                    break;
+                case 'price_desc':
+                    sortedProducts.sort((a, b) => b.price - a.price);
+                    break;
+                case 'discount_asc':
+                    sortedProducts.sort((a, b) => (a.price * (1 - getRandomDiscount() / 100)) - (b.price * (1 - getRandomDiscount() / 100)));
+                    break;
+                case 'discount_desc':
+                    sortedProducts.sort((a, b) => (b.price * (1 - getRandomDiscount() / 100)) - (a.price * (1 - getRandomDiscount() / 100)));
+                    break;
+                case 'name_asc':
+                    sortedProducts.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'name_desc':
+                    sortedProducts.sort((a, b) => b.title.localeCompare(a.title));
+                    break;
+            }
+
+            displayProducts(sortedProducts);
+        }
+
+        // Update cart count
+        let cartCount = 0;
+
+        function updateCartCount() {
+            const cartCountElement = document.getElementById('cart-count');
+            cartCountElement.textContent = cartCount.toString();
+        }
+
+        function addToCart() {
+            cartCount++;
+            updateCartCount();
+        }
+
+        // Call addToCart function when an item is clicked
+        document.querySelectorAll('.product-list-item').forEach(item => {
+            item.addEventListener('click', addToCart);
+        });
+
+        // Pagination controls
+        document.getElementById('next-page-btn').addEventListener('click', () => {
+            currentPage++;
+            displayProducts(productsData.slice((currentPage - 1) * perPage, currentPage * perPage));
+            updatePagination();
+        });
+
+        document.getElementById('prev-page-btn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayProducts(productsData.slice((currentPage - 1) * perPage, currentPage * perPage));
+                updatePagination();
+            }
+        });
+
+        // Update current page display
+        function updateCurrentPage() {
+            document.getElementById('current-page').textContent = `Page ${currentPage}`;
+        }
+
+        
+        changeProductsPerPage();
+
+        // Function to change the number of products per page
+        function changeProductsPerPage() {
+            perPage = parseInt(document.getElementById('productsPerPage').value);
+            displayProducts(productsData.slice(0, perPage));
+            updatePagination();
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif; 
+      background-color: #f8f9fa; 
+    }
+    h1 {
+      text-align: center; 
+      margin-top: 20px; 
+    }
+    .product-container {
+      display: flex;
+      flex-direction: column; 
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      background-color: #fff; 
+    }
+    .product-image-container {
+      text-align: center;
+      margin-bottom: 20px; 
+    }
+    .product-image {
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.3s ease-in-out;
+    }
+    .product-image:hover {
+      transform: scale(1.1);
+    }
+    .product-details-container {
+      padding: 20px;
+      border-top: 1px solid #ccc; 
+    }
+    .product-title {
+      font-weight: bold;
+      font-size: 24px;
+      margin-top: 0;
+    }
+    .product-price {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .product-description {
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+    .add-to-cart-button {
+      padding: 10px 20px;
+      background-color: #c0c0c0; 
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease-in-out;
+      width: 100%;
+      text-align: center;
+    }
+    .add-to-cart-button.added {
+      background-color: #0bf031;
+    }
+    .loader {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="index.html" style="text-decoration: none; color: #8d7e7e; font-size: 20px; font-weight: bold;">GUNA</a>
+  </header>
+  
+  <h1>Product Details</h1>
+  <div id="loader" class="loader"><i class="fas fa-spinner fa-spin"></i></div>
+  <div id="product-details" class="product-container" style="display: none;"></div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Retrieve the product ID from the query parameter in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+
+    $('#loader').show();
+
+    // Fetch the product details from the API based on the product ID
+    fetch(`https://fakestoreapi.com/products/${productId}`)
+      .then(response => response.json())
+      .then(product => {
+        $('#loader').hide(); 
+        const productContainer = document.getElementById('product-details');
+
+        // Create the image container
+        const imageContainer = document.createElement('div');
+        imageContainer.classList.add('product-image-container');
+        imageContainer.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+
+        const image = document.createElement('img');
+        image.classList.add('product-image');
+        image.src = product.image;
+        image.alt = product.title;
+        image.addEventListener('click', zoomImage);
+        imageContainer.appendChild(image);
+
+        
+        function zoomImage() {
+          if (!image.classList.contains('zoomed')) {
+            image.classList.add('zoomed');
+          } else {
+            image.classList.remove('zoomed');
+          }
+        }
+
+        // Create the product details container
+        const detailsContainer = document.createElement('div');
+        detailsContainer.classList.add('product-details-container');
+        detailsContainer.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+
+        const title = document.createElement('h2');
+        title.classList.add('product-title');
+        title.textContent = product.title;
+        detailsContainer.appendChild(title);
+
+        const price = document.createElement('div');
+        price.classList.add('product-price');
+        price.textContent = `$${product.price}`;
+        detailsContainer.appendChild(price);
+
+        const description = document.createElement('div');
+        description.classList.add('product-description');
+        description.textContent = product.description;
+        detailsContainer.appendChild(description);
+
+        
+        const quantity = document.createElement('div');
+        quantity.textContent = 'Quantity: 1';
+        detailsContainer.appendChild(quantity);
+
+        // Add the "Add to Cart" button
+        const addToCartButton = document.createElement('button');
+        addToCartButton.classList.add('add-to-cart-button');
+        addToCartButton.textContent = 'Add to Cart';
+        addToCartButton.addEventListener('click', addToCart);
+        detailsContainer.appendChild(addToCartButton);
+
+        // Function to add the product to the cart
+        function addToCart() {
+          const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+          const cartItem = {
+            id: product.id,
+            title: product.title,
+            price: product.price,
+            image: product.image,
+            quantity: 1 
+          };
+          cartItems.push(cartItem);
+          localStorage.setItem('cartItems', JSON.stringify(cartItems));
+
+          addToCartButton.classList.add('added');
+          addToCartButton.textContent = 'Added to Cart';
+
+          
+          setTimeout(function() {
+            addToCartButton.classList.remove('added');
+            addToCartButton.textContent = 'Add to Cart';
+          }, 2000);
+        }
+
+        
+        productContainer.appendChild(imageContainer);
+        productContainer.appendChild(detailsContainer);
+        productContainer.style.display = 'block'; 
+      })
+      .catch(error => {
+        console.error('Error fetching product details:', error);
+      });
+  </script>
+</body>
+</html>

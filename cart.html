@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0; 
+    }
+
+    header {
+      background-color: #333; 
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: white;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 9999;
+    }
+
+    img {
+      width: 30px;
+      height: 30px;
+      border: 1px solid white;
+      border-radius: 50%;
+      margin: 8px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-family: cursive;
+      font-size: 24px;
+      color: #333; 
+    }
+   
+
+    .cart-item {
+      width: 300px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      background-color: #fff; 
+    }
+
+    .cart-item-image {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      margin-right: 10px;
+    }
+    
+
+    .cart-item-details {
+      flex: 1;
+    }
+
+    .cart-item-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .cart-item-price {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .cart-item-quantity {
+      margin-bottom: 5px;
+    }
+
+    .quantity-buttons button {
+      margin-right: 5px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .quantity-buttons button:hover {
+      background-color: #45a049;
+    }
+
+    .remove-button {
+      background-color: #c0c0c0; 
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background-color 0.3s ease;
+    }
+
+    .remove-button:hover {
+      background-color: #a9a9a9; 
+    }
+
+    .empty-cart-message {
+      font-weight: bold;
+      color: #333; 
+    }
+
+    .total-amount {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #333; 
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="index.html" style="text-decoration: none; color: #000; font-size: 20px; font-weight: bold;">GUNA</a>
+  </header>
+
+  <h1>Cart</h1>
+  <div id="cart-items"></div>
+  <div id="total-amount"></div>
+  
+  
+  <div class="dropdown">
+    <select id="discount-options">
+      <option value="0">No Discount</option>
+      <option value="0.1">10% Discount</option>
+      <option value="0.2">20% Discount</option>
+      <option value="0.3">30% Discount</option>
+    </select>
+    <button class="apply-discount-button" onclick="applyDiscount()">Apply Discount</button>
+  </div>
+  
+
+  <script>
+    // Retrieve cart items from local storage
+    let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+    const cartItemsContainer = document.getElementById('cart-items');
+    const totalAmountContainer = document.getElementById('total-amount');
+
+    // Clear the cart items container
+    cartItemsContainer.innerHTML = '';
+    totalAmountContainer.innerHTML = '';
+
+    // Check if the cart is empty
+    if (cartItems.length === 0) {
+      const emptyCartMessage = document.createElement('div');
+      emptyCartMessage.classList.add('empty-cart-message');
+      emptyCartMessage.textContent = 'Your cart is empty';
+      cartItemsContainer.appendChild(emptyCartMessage);
+    } else {
+      updateCart();
+    }
+
+    // Function to add an item to the cart
+    function addToCart() {
+      const product = {
+        id: 'product' + (cartItems.length + 1),
+        title: 'Product Title',
+        price: 10,
+        image: 'product.jpg',
+        quantity: 1 
+      };
+
+      // Check if the product is already in the cart
+      let existingItem = cartItems.find(item => item.id === product.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cartItems.push(product);
+      }
+
+      localStorage.setItem('cartItems', JSON.stringify(cartItems));
+      updateCart();
+    }
+
+    // Function to remove an item from the cart
+    function removeItemFromCart(itemId) {
+      cartItems = cartItems.filter(item => item.id !== itemId);
+      localStorage.setItem('cartItems', JSON.stringify(cartItems));
+      updateCart();
+    }
+
+    
+    function incrementQuantity(itemId) {
+      const item = cartItems.find(item => item.id === itemId);
+      if (item) {
+        item.quantity += 1;
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        updateCart();
+      }
+    }
+
+    
+    function decrementQuantity(itemId) {
+      const item = cartItems.find(item => item.id === itemId);
+      if (item && item.quantity > 1) {
+        item.quantity -= 1;
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+        updateCart();
+      }
+    }
+
+    // Function to update the cart display
+    function updateCart() {
+      // Clear the cart items container
+      cartItemsContainer.innerHTML = '';
+      totalAmountContainer.innerHTML = '';
+
+      if (cartItems.length === 0) {
+        const emptyCartMessage = document.createElement('div');
+        emptyCartMessage.classList.add('empty-cart-message');
+        emptyCartMessage.textContent = 'Your cart is empty';
+        cartItemsContainer.appendChild(emptyCartMessage);
+      } else {
+        let totalAmount = 0;
+
+        cartItems.forEach(item => {
+          const cartItemElement = document.createElement('div');
+          cartItemElement.classList.add('cart-item');
+
+          const itemImage = document.createElement('img');
+          itemImage.src = item.image;
+          itemImage.alt = item.title;
+          cartItemElement.appendChild(itemImage);
+
+          const itemDetails = document.createElement('div');
+          itemDetails.classList.add('cart-item-details');
+
+          const itemTitle = document.createElement('div');
+          itemTitle.classList.add('cart-item-title');
+          itemTitle.textContent = item.title || 'Product Title Not Available';
+          itemDetails.appendChild(itemTitle);
+
+          const itemPrice = document.createElement('div');
+          itemPrice.classList.add('cart-item-price');
+          itemPrice.textContent = `Price: $${item.price || 'N/A'}`;
+          itemDetails.appendChild(itemPrice);
+
+          const itemQuantity = document.createElement('div');
+          itemQuantity.classList.add('cart-item-quantity');
+
+          // Quantity display and buttons
+          const quantityDisplay = document.createElement('span');
+          quantityDisplay.textContent = `Quantity: ${item.quantity}`;
+          itemQuantity.appendChild(quantityDisplay);
+
+          const quantityButtons = document.createElement('div');
+          quantityButtons.classList.add('quantity-buttons');
+
+          const incrementButton = document.createElement('button');
+          incrementButton.textContent = '+';
+          incrementButton.addEventListener('click', () => {
+            incrementQuantity(item.id);
+          });
+          quantityButtons.appendChild(incrementButton);
+
+          const decrementButton = document.createElement('button');
+          decrementButton.textContent = '-';
+          decrementButton.addEventListener('click', () => {
+            decrementQuantity(item.id);
+          });
+          quantityButtons.appendChild(decrementButton);
+
+          itemQuantity.appendChild(quantityButtons);
+          itemDetails.appendChild(itemQuantity);
+
+          const removeButton = document.createElement('button');
+          removeButton.textContent = 'Remove';
+          removeButton.classList.add('remove-button');
+          removeButton.addEventListener('click', () => {
+            removeItemFromCart(item.id);
+          });
+          itemDetails.appendChild(removeButton);
+
+          cartItemElement.appendChild(itemDetails);
+          cartItemsContainer.appendChild(cartItemElement);
+
+          totalAmount += (item.price || 0) * item.quantity;
+        });
+
+        const totalAmountText = document.createElement('div');
+        totalAmountText.classList.add('total-amount');
+        totalAmountText.textContent = `Total Amount: $${totalAmount}`;
+        totalAmountContainer.appendChild(totalAmountText);
+      }
+    }
+    
+
+    // Function to apply discount
+    function applyDiscount() {
+      const discountSelect = document.getElementById('discount-options');
+      const selectedDiscount = parseFloat(discountSelect.value);
+
+      // Apply discount to the total amount
+      let totalAmount = 0;
+      cartItems.forEach(item => {
+        totalAmount += (item.price || 0) * item.quantity;
+      });
+
+      const discountedAmount = totalAmount - (totalAmount * selectedDiscount);
+      
+      // Display the discounted amount
+      const totalAmountText = document.querySelector('.total-amount');
+      totalAmountText.textContent = `Discounted Amount: $${discountedAmount.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>
